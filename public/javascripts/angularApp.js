@@ -7,7 +7,12 @@ app.config(['$stateProvider', '$urlRouterProvider',
             .state('home', {
                 url: '/home',
                 templateUrl: '/home.html',
-                controller: 'MainCtrl'
+                controller: 'MainCtrl',
+                resolve: {
+                    postPromise: ['posts', function(posts){
+                        return posts.getAll();
+                    }]
+                }
             })
             .state('posts', {
                 url: '/posts/{id}',
@@ -31,14 +36,9 @@ app.controller('MainCtrl', [ '$scope', 'posts',
                 return;
             }
 
-            $scope.posts.push({
+            postsService.create({
                 title: $scope.title,
-                link: $scope.link,
-                upvotes: 0,
-                comments: [
-                    {author: 'Joe', body: 'Cool post!', upvotes: 0},
-                    {author: 'Bob', body: 'Great idea but everything is wrong!', upvotes: 0}
-                ]
+                link: $scope.link
             });
 
             $scope.title = '';
@@ -46,7 +46,7 @@ app.controller('MainCtrl', [ '$scope', 'posts',
         };
 
         $scope.upvotePost = function(post){
-            post.upvotes += 1;
+            postsService.upvote(post);
         };
     }
 ]);
@@ -73,16 +73,31 @@ app.controller('PostsCtrl', [ '$scope', '$stateParams', 'posts',
     }
 ]);
 
-app.factory('posts', [function(){
-  // service body
-  var output = {
-    posts : [
-        {title: 'post 1', link: '', upvotes: 5},
-        {title: 'post 2', link: '', upvotes: 2},
-        {title: 'post 3', link: '', upvotes: 15},
-        {title: 'post 4', link: '', upvotes: 9},
-        {title: 'post 5', link: '', upvotes: 4}
-    ]
+app.factory('posts', ['$http', function($http){
+
+  var o = {
+    posts : []
   };
-  return output;
+
+  o.getAll = function() {
+    return $http.get('/posts').success(function (data) {
+        angular.copy(data, o.posts);
+    });
+  };
+
+  o.create = function (post) {
+    return $http.post('/posts', post).success(function (createdPost){
+        o.posts.push(createdPost);
+    });
+  };
+
+  o.upvote = function (post) {
+    var url = '/posts/' + post._id + '/upvote';
+    console.log(url);
+    return $http.post(url).success(function(data) {
+        post.upvotes += 1;
+    });
+  };
+
+  return o;
 }]);
