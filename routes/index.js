@@ -48,7 +48,7 @@ router.get('/post/:post', function(req, res) {
     });
 });
 
-router.post('/posts/:post/upvote', function(req, res, next){
+router.put('/posts/:post/upvote', function(req, res, next){
     req.post.upvote(function(err, post){
         if (err){
             return next(err);
@@ -105,7 +105,7 @@ router.param('comment', function(req, res, next, id) {
 
   query.exec(function (err, comment){
     if (err) { return next(err); }
-    if (!post) { return next(new Error('can\'t find comment')); }
+    if (!comment) { return next(new Error('can\'t find comment')); }
 
     req.comment = comment;
     return next();
